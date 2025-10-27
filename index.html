@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Fact Checking Forum</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+<style>
+:root{
+  --student:#2b6cb0; --faculty:#229954; --admin:#c53030; --bg:#f6f8fb; --card:#fff; --muted:#667085; --accent: #111;
+}
+body.student-theme {
+  --accent: var(--student);
+}
+body.faculty-theme {
+  --accent: var(--faculty);
+}
+body.admin-theme {
+  --accent: var(--admin);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Roboto', Inter, system-ui, Arial, sans-serif;background:var(--bg);color:#111}
+a{color:inherit}
+.container{max-width:1080px;margin:0 auto;padding:24px}
+.nav{position:sticky;top:0;background:#fff;border-bottom:1px solid #eee;z-index:10}
+.nav-inner{display:flex;align-items:center;gap:12px;max-width:1080px;margin:0 auto;padding:12px 24px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.nav-links{display:flex;gap:12px;margin-left:20px;flex-wrap:wrap}
+.nav-links a{padding:6px 10px;border-radius:8px;text-decoration:none;color:#333}
+.nav-links a.active{background: var(--accent); color: #fff; font-weight: bold; border-bottom: 2px solid var(--accent);}
+.nav-cta{margin-left:auto;display:flex;align-items:center;gap:10px}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;background: var(--accent); color: #fff;}
+.btn{padding:8px 12px;border:none;border-radius:8px;background: var(--accent);color:#fff;cursor:pointer;display:inline-block}
+.btn.outline {
+  background: #c53030;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.btn.outline:hover {
+  background: #a72020;
+}
+.card{background:var(--card);border:1px solid #eee;border-radius:12px;padding:16px;margin-bottom:16px}
+.h{margin:0 0 8px 0}
+.muted{color:var(--muted);font-size:13px}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-inner">
+    <div class="brand">Fact Checking Forum</div>
+    <div class="nav-links" id="navLinks">
+      <a href="#dashboard">Dashboard</a>
+      <a href="#queries">Queries</a>
+      <a href="#post" class="student-only hidden">Post Query</a>
+      <a href="#my-queries" class="student-only hidden">My Queries</a>
+      <a href="#my-responses" class="faculty-only hidden">My Responses</a>
+      <a href="#admin" class="admin-only hidden">Admin Panel</a>
+    </div>
+    <div class="nav-cta">
+      <span class="badge" id="roleBadge">Role: Guest</span>
+      <a class="btn outline hidden" id="logoutBtn">Logout</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- LANDING -->
+  <section id="landing" class="card">
+    <h2>Fact Checking Forum</h2>
+    <div class="muted">A platform for students to post queries and faculty to respond.</div>
+    <div style="margin-top:12px">
+      <a class="btn" href="#login">Login</a>
+    </div>
+  </section>
+
+  <!-- LOGIN -->
+  <section id="login" class="card hidden">
+    <h2>Login</h2>
+    <div class="muted">Demo accounts: student1/pass123, faculty1/pass123, admin1/pass123</div>
+    <form id="loginForm" style="margin-top:12px">
+      <input class="input" id="loginUsername" placeholder="username" required><br><br>
+      <input class="input" id="loginPassword" type="password" placeholder="password" required><br><br>
+      <select id="loginRole">
+        <option value="student">Student</option>
+        <option value="faculty">Faculty</option>
+        <option value="admin">Admin</option>
+      </select><br><br>
+      <button class="btn" type="submit">Login</button>
+    </form>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="card hidden">
+    <h2>Dashboard</h2>
+    <div id="dashContent" class="muted">
+  Welcome! This is your dashboard.<br>
+  <strong>Username:</strong> <span id="dashUsername">-</span><br>
+  <strong>Role:</strong> <span id="dashRole">-</span>
+</div>
+    <div id="dashStats" style="margin-top:12px; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:12px"></div>
+  </section>
+
+  <!-- QUERIES -->
+  <section id="queries" class="card hidden">
+    <h2>Queries</h2>
+    <div class="tab-container" style="display:flex;gap:10px;margin-bottom:10px;">
+      <button id="tab-pending" class="btn" onclick="switchQueryTab('pending')">Pending</button>
+      <button id="tab-responded" class="btn outline" onclick="switchQueryTab('responded')">Responded</button>
+    </div>
+    <div id="pendingQueries"></div>
+    <div id="respondedQueries" class="hidden"></div>
+  </section>
+
+  <!-- POST QUERY -->
+  <section id="post" class="card hidden">
+    <h2>Post a Query</h2>
+    <form id="postForm">
+      <input id="qTitle" placeholder="Title" required><br><br>
+      <textarea id="qDesc" placeholder="Description" required></textarea><br><br>
+      <button class="btn" type="submit">Submit</button>
+    </form>
+  </section>
+
+  <!-- MY QUERIES -->
+  <section id="my-queries" class="card hidden">
+    <h2>My Queries</h2>
+    <div id="myQueriesList"></div>
+  </section>
+
+  <!-- MY RESPONSES -->
+  <section id="my-responses" class="card hidden">
+    <h2>My Responses</h2>
+    <div id="myResponsesList"></div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="admin" class="card hidden">
+    <h2>Admin Dashboard</h2>
+    <div id="adminStats">Loading system stats...</div>
+    <hr>
+    <h3>👥 User Management</h3>
+    <div id="userList">Loading users...</div>
+    <hr>
+    <h3>➕ Add User</h3>
+    <form id="addUserForm">
+      <input id="userUsername" placeholder="Username" required><br><br>
+      <input id="userPassword" type="password" placeholder="Password" required><br><br>
+      <select id="userRole" required>
+        <option value="" disabled selected>Select Role</option>
+        <option value="student">Student</option>
+        <option value="faculty">Faculty</option>
+        <option value="admin">Admin</option>
+      </select><br><br>
+      <button class="btn" type="submit">Add User</button>
+    </form>
+  </section>
+
+
+  </div>
+
+  <div id="notification" style="position:fixed; top:20px; right:20px; background:#fff; border-left:5px solid #2b6cb0; padding:12px 16px; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1); display:none; z-index:2000; font-weight:500;">
+    <span id="notificationText"></span>
+  </div>
+
+<script>
+const API_BASE = "http://127.0.0.1:5051/api";
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+let currentUser = null;
+
+function showMessage(text, type = "info") {
+  const box = document.getElementById("notification");
+  const txt = document.getElementById("notificationText");
+  txt.textContent = text;
+  box.style.borderLeftColor = type === "error" ? "#c53030" : (type === "success" ? "#229954" : "#2b6cb0");
+  box.style.background = "#fff";
+  box.style.display = "block";
+  setTimeout(() => { box.style.display = "none"; }, 4000);
+}
+
+function showSection(id){
+  ['#landing','#login','#dashboard','#queries','#post','#my-queries','#my-responses','#admin']
+    .forEach(sel => $(sel).classList.add('hidden'));
+  $(id).classList.remove('hidden');
+  $$('#navLinks a').forEach(a=> a.classList.toggle('active', a.getAttribute('href')===id));
+}
+
+function setRole(role){
+  $('#roleBadge').textContent = 'Role: '+role;
+  $$('.student-only').forEach(el=> el.classList.toggle('hidden', role!=='student'));
+  $$('.faculty-only').forEach(el=> el.classList.toggle('hidden', role!=='faculty'));
+  $$('.admin-only').forEach(el=> el.classList.toggle('hidden', role!=='admin'));
+}
+
+$('#loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const uname = $('#loginUsername').value.trim();
+  const pwd = $('#loginPassword').value.trim();
+  const role = $('#loginRole').value.trim();
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: uname, password: pwd, role })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Login failed");
+
+    // Save token & role locally
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", data.role);
+    localStorage.setItem("username", uname);
+
+    showMessage("Login successful! Redirecting...", "success");
+    currentUser = { username: uname, role: data.role };
+    document.body.className = data.role + "-theme";
+    setRole(data.role);
+    $('#logoutBtn').classList.remove('hidden');
+    $('#dashUsername').textContent = uname;
+    $('#dashRole').textContent = data.role;
+    showSection('#dashboard');
+    loadDashboard();
+  } catch (err) {
+    showMessage("Login failed. Please check your credentials.", "error");
+  }
+});
+
+// ✅ Handle Post Query submission
+$('#postForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem('token');
+  const title = $('#qTitle').value.trim();
+  const description = $('#qDesc').value.trim();
+
+  if (!token) {
+    showMessage('Please login first to continue.', "info");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/queries/new`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ title, description })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to post query');
+
+    showMessage('Query posted successfully!', "success");
+    $('#qTitle').value = '';
+    $('#qDesc').value = '';
+    showSection('#queries');
+    await loadQueries();
+  } catch (err) {
+    showMessage('Could not post query. Try again.', "error");
+  }
+});
+
+async function loadQueries(){
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+  if(!token){
+    $('#pendingQueries').innerHTML = "<p>Please login first.</p>";
+    $('#respondedQueries').innerHTML = "";
+    return;
+  }
+
+  try {
+    const endpoint = role === 'admin' ? `${API_BASE}/queries/admin/queries` : `${API_BASE}/queries/`;
+    const res = await fetch(endpoint, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    // Separate queries into responded and pending
+    const responded = [];
+    const pending = [];
+    data.forEach(q => {
+      if (q.responses && q.responses.length > 0) {
+        responded.push(q);
+      } else {
+        pending.push(q);
+      }
+    });
+
+    function renderQueryCard(q) {
+      let responseSection = '';
+      if (q.responses && q.responses.length) {
+        responseSection = q.responses.map(r => `
+          <div class="card" style="background:#f9f9f9; margin-top:8px;">
+            <strong>Response:</strong> ${r.content}
+            <div class="muted">Faculty ID: ${r.faculty_id}</div>
+            <div class="muted">Responded: ${r.created_at}</div>
+            ${role === 'admin' ? `<button class="btn outline" onclick="deleteResponse(${r.id})">Delete Response</button>` : ''}
+          </div>
+        `).join('');
+      } else {
+        responseSection = `<em>No responses yet.</em>`;
+      }
+      // Faculty can always respond (even if responses exist)
+      if (role === 'faculty') {
+        responseSection += `
+          <div class="respond-box" style="margin-top:10px;">
+            <textarea id="resp-${q.id}" placeholder="Write your response..." rows="2"></textarea>
+            <button class="btn" onclick="submitResponse(${q.id})">Submit Response</button>
+          </div>
+        `;
+      }
+      return `
+        <div class="card">
+          <h3>${q.title}</h3>
+          <p>${q.description}</p>
+          <div class="muted">Asked by Student ID: ${q.student_id}</div>
+          <div class="muted">Posted: ${q.created_at}</div>
+          ${responseSection}
+          ${role === 'admin' ? `<button class="btn outline" onclick="deleteQuery(${q.id})">Delete Query</button>` : ''}
+        </div>
+      `;
+    }
+
+    // Fill the pendingQueries and respondedQueries containers (no headers)
+    const pendingDiv = $('#pendingQueries');
+    const respondedDiv = $('#respondedQueries');
+    if (pending.length === 0) {
+      pendingDiv.innerHTML = `<p>No pending queries</p>`;
+    } else {
+      pendingDiv.innerHTML = pending.map(renderQueryCard).join('');
+    }
+    if (responded.length === 0) {
+      respondedDiv.innerHTML = `<p>No responded queries</p>`;
+    } else {
+      respondedDiv.innerHTML = responded.map(renderQueryCard).join('');
+    }
+  } catch {
+    $('#pendingQueries').innerHTML = "<p>⚠️ Failed to load queries.</p>";
+    $('#respondedQueries').innerHTML = "";
+  }
+}
+
+// Delete Query (Admin)
+async function deleteQuery(id) {
+  const token = localStorage.getItem("token");
+  if (!confirm(`Delete query #${id}?`)) return;
+  const res = await fetch(`${API_BASE}/queries/admin/delete_query/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await res.json();
+  if (!res.ok) showMessage(data.error || "Failed to delete query", "error");
+  else showMessage(data.message || "Query deleted.", "success");
+  await loadQueries();
+}
+
+// Delete Response (Admin)
+async function deleteResponse(id) {
+  const token = localStorage.getItem("token");
+  if (!confirm(`Delete response #${id}?`)) return;
+  const res = await fetch(`${API_BASE}/queries/admin/delete_response/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await res.json();
+  if (!res.ok) showMessage(data.error || "Failed to delete response", "error");
+  else showMessage(data.message || "Response deleted.", "success");
+  await loadQueries();
+}
+
+// 🔔 Simple notification helper (for "new response" in my queries)
+function showNotification(message) {
+  showMessage(message, "info");
+}
+
+// ✅ Load My Queries (student-specific)
+async function loadMyQueries() {
+  const token = localStorage.getItem("token");
+  window.previousQueries = window.previousQueries || [];
+  if (!token) {
+    $('#myQueriesList').innerHTML = "<p>Please login first.</p>";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/queries/my`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    const list = $('#myQueriesList');
+    if (data.length === 0) {
+      list.innerHTML = "<p>No queries posted yet.</p>";
+      return;
+    }
+    // 🔍 Compare with previous queries for new responses
+    data.forEach((q, i) => {
+      const prev = window.previousQueries.find(p => p.id === q.id);
+      if (prev && (!prev.responses?.length && q.responses?.length)) {
+        showNotification(`🔔 New response added to your query: "${q.title}"`);
+      }
+    });
+    window.previousQueries = data;
+    list.innerHTML = data.map(q => `
+      <div class="card">
+        <h3>${q.title}</h3>
+        <p>${q.description}</p>
+        <div class="muted">Posted: ${q.created_at}</div>
+        ${q.responses && q.responses.length
+          ? `<div><strong>Response:</strong> ${q.responses[0].content}
+            <div class="muted">Responded: ${q.responses[0].created_at}</div>
+          </div>`
+          : `<em>No responses yet.</em>`}
+      </div>
+    `).join('');
+  } catch (err) {
+    $('#myQueriesList').innerHTML = "<p>⚠️ Failed to load your queries.</p>";
+  }
+}
+
+// ✅ Faculty Submit Response
+async function submitResponse(queryId) {
+  const token = localStorage.getItem('token');
+  const responseText = $(`#resp-${queryId}`).value.trim();
+  if (!responseText) {
+    showMessage("Please enter a response before submitting.", "info");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/queries/respond/${queryId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ content: responseText })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to submit response");
+    showMessage("Response submitted successfully!", "success");
+    await loadQueries();
+  } catch (err) {
+    showMessage(err.message || "Failed to submit response", "error");
+  }
+}
+
+// ✅ Load My Responses (faculty-specific)
+async function loadMyResponses() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    $('#myResponsesList').innerHTML = "<p>Please login first.</p>";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/queries/responses/my`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    const list = $('#myResponsesList');
+    if (data.length === 0) {
+      list.innerHTML = "<p>No responses submitted yet.</p>";
+      return;
+    }
+    list.innerHTML = data.map(r => `
+      <div class="card">
+        <h3>${r.query_title}</h3>
+        <p>${r.query_description}</p>
+        <div><strong>Your Response:</strong> ${r.content}</div>
+        <div class="muted">Responded: ${r.created_at}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    $('#myResponsesList').innerHTML = "<p>⚠️ Failed to load your responses.</p>";
+  }
+}
+
+// ✅ Load Admin Dashboard Stats
+async function loadAdminDashboard() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    $('#adminStats').innerHTML = "<p>Please login as Admin.</p>";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/queries/admin/stats`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to load admin stats");
+
+    $('#adminStats').innerHTML = `
+      <div class="card">
+        <h3>📊 System Summary</h3>
+        <p><strong>Total Users:</strong> ${data.total_users}</p>
+        <p>Students: ${data.students}, Faculty: ${data.faculty}, Admins: ${data.admins}</p>
+      </div>
+    `;
+  } catch (err) {
+    $('#adminStats').innerHTML = `<p>⚠️ ${err.message}</p>`;
+  }
+}
+
+
+// ✅ Load Users (Admin only)
+async function loadUsers() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    $('#userList').innerHTML = "<p>Please login as Admin.</p>";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/queries/admin/users`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const users = await res.json();
+    if (!res.ok) throw new Error(users.error || "Failed to load users");
+
+    $('#userList').innerHTML = users.map(u => `
+      <div class="card">
+        <b>${u.username}</b> <span class="muted">(${u.role})</span><br>
+        <small>ID: ${u.id}</small><br>
+        <small>Status: ${u.active ? "✅ Active" : "🚫 Suspended"}</small><br>
+        <div class="user-actions" style="margin-top: 8px;">
+          ${u.active 
+            ? `<button class="btn outline" onclick="suspendUser(${u.id})">Suspend</button>` 
+            : `<button class="btn outline" onclick="unsuspendUser(${u.id})">Unsuspend</button>`}
+          <button class="btn danger" onclick="deleteUser(${u.id})">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    $('#userList').innerHTML = `<p>⚠️ ${err.message}</p>`;
+  }
+}
+
+// ✅ Suspend User
+async function suspendUser(id) {
+  const token = localStorage.getItem("token");
+  if (!confirm(`Suspend user #${id}?`)) return;
+  const res = await fetch(`${API_BASE}/queries/admin/suspend_user/${id}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await res.json();
+  if (!res.ok) showMessage(data.error || "Failed to suspend user", "error");
+  else showMessage(data.message || "User suspended", "success");
+  loadUsers();
+}
+
+// ✅ Unsuspend User
+async function unsuspendUser(userId) {
+  const token = localStorage.getItem("token");
+  try {
+    const res = await fetch(`${API_BASE}/queries/admin/unsuspend_user/${userId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to unsuspend user");
+    showMessage(data.message || "User unsuspended", "success");
+    loadUsers();
+  } catch (err) {
+    showMessage(err.message || "Failed to unsuspend user", "error");
+  }
+}
+
+// ✅ Delete User
+async function deleteUser(userId) {
+  const token = localStorage.getItem("token");
+  if (!confirm("Are you sure you want to delete this user?")) return;
+  try {
+    const res = await fetch(`${API_BASE}/queries/admin/delete_user/${userId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to delete user");
+    showMessage(data.message || "User deleted", "success");
+    loadUsers();
+  } catch (err) {
+    showMessage(err.message || "Failed to delete user", "error");
+  }
+}
+
+// ✅ Add User (Student, Faculty, Admin)
+$('#addUserForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem("token");
+  const username = $('#userUsername').value.trim();
+  const password = $('#userPassword').value.trim();
+  const role = $('#userRole').value;
+
+  try {
+    const res = await fetch(`${API_BASE}/queries/admin/add_user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ username, password, role })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to add user");
+
+    showMessage(`${role.charAt(0).toUpperCase() + role.slice(1)} added successfully!`, "success");
+    $('#addUserForm').reset();
+    loadUsers();
+  } catch (err) {
+    showMessage(err.message || "Failed to add user", "error");
+  }
+});
+
+async function loadDashboard(){
+  const role = localStorage.getItem('role');
+  if(role==='student' || role==='faculty' || role==='admin'){
+    await loadQueries();
+  }
+}
+
+$('#logoutBtn').addEventListener('click', ()=>{
+  currentUser=null;
+  localStorage.clear();
+  $('#dashUsername').textContent = '-';
+  $('#dashRole').textContent = '-';
+  $('#dashStats').innerHTML = '';
+  setRole('Guest');
+  document.body.className = '';
+  $('#logoutBtn').classList.add('hidden');
+  showSection('#landing');
+});
+
+window.addEventListener('hashchange', async ()=>{
+  const h = location.hash || '#landing';
+  if (!currentUser && h !== '#landing' && h !== '#login') {
+    showSection('#login');
+    return;
+  }
+  showSection(h);
+
+  // Auto-load content when switching tabs
+  if (h === '#queries') await loadQueries();
+  if (h === '#my-queries') await loadMyQueries();
+  if (h === '#my-responses') await loadMyResponses();
+  if (h === '#admin') await loadAdminDashboard();
+  if (h === '#admin') await loadUsers();
+});
+
+setRole('Guest'); showSection('#landing');
+
+// Tabbed navigation for Queries section
+function switchQueryTab(tab) {
+  const pending = document.getElementById('pendingQueries');
+  const responded = document.getElementById('respondedQueries');
+  const btnPending = document.getElementById('tab-pending');
+  const btnResponded = document.getElementById('tab-responded');
+  
+  if (tab === 'pending') {
+    pending.classList.remove('hidden');
+    responded.classList.add('hidden');
+    btnPending.classList.remove('outline');
+    btnResponded.classList.add('outline');
+  } else {
+    responded.classList.remove('hidden');
+    pending.classList.add('hidden');
+    btnResponded.classList.remove('outline');
+    btnPending.classList.add('outline');
+  }
+}
+</script>
+</body>
+</html>
