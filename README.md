@@ -127,9 +127,6 @@ This project helped me explore **authentication flows, Flask architecture, and P
 ## 👨‍💻 Author
 
 **Gokulakrishnan M**  
-🎓 B.Tech Computer Science Student  
-📍 Kanchipuram, Tamil Nadu  
-📧 [your.email@example.com]  
 🌐 [https://github.com/&lt;your-username&gt;](https://github.com/&lt;your-username&gt;)
 
 ---
